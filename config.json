@@ -139,9 +139,7 @@
     },
     "pairlists": [
         {
-            "method": "VolumePairList",
-            "number_assets": 75,
-            "sort_key": "quoteVolume"
+            "method": "StaticPairList"
         },
         {"method": "ShuffleFilter"}
 

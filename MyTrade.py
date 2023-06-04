@@ -39,22 +39,95 @@ except ImportError:
 else:
     log.info("pandas_ta successfully imported")
 
-class MyTrade(IStrategy):
+
+#############################################################################################################
+##                NostalgiaForInfinityX by iterativ                                                        ##
+##           https://github.com/iterativv/NostalgiaForInfinity                                             ##
+##                                                                                                         ##
+##    Strategy for Freqtrade https://github.com/freqtrade/freqtrade                                        ##
+##                                                                                                         ##
+#############################################################################################################
+##               GENERAL RECOMMENDATIONS                                                                   ##
+##                                                                                                         ##
+##   For optimal performance, suggested to use between 4 and 6 open trades, with unlimited stake.          ##
+##   A pairlist with 40 to 80 pairs. Volume pairlist works well.                                           ##
+##   Prefer stable coin (USDT, BUSDT etc) pairs, instead of BTC or ETH pairs.                              ##
+##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                      ##
+##   Ensure that you don't override any variables in you config.json. Especially                           ##
+##   the timeframe (must be 5m).                                                                           ##
+##     use_exit_signal must set to true (or not set at all).                                               ##
+##     exit_profit_only must set to false (or not set at all).                                             ##
+##     ignore_roi_if_entry_signal must set to true (or not set at all).                                    ##
+##                                                                                                         ##
+#############################################################################################################
+##               HOLD SUPPORT                                                                              ##
+##                                                                                                         ##
+## -------- SPECIFIC TRADES ------------------------------------------------------------------------------ ##
+##   In case you want to have SOME of the trades to only be sold when on profit, add a file named          ##
+##   "nfi-hold-trades.json" in the user_data directory                                                     ##
+##                                                                                                         ##
+##   The contents should be similar to:                                                                    ##
+##                                                                                                         ##
+##   {"trade_ids": [1, 3, 7], "profit_ratio": 0.005}                                                       ##
+##                                                                                                         ##
+##   Or, for individual profit ratios(Notice the trade ID's as strings:                                    ##
+##                                                                                                         ##
+##   {"trade_ids": {"1": 0.001, "3": -0.005, "7": 0.05}}                                                   ##
+##                                                                                                         ##
+##   NOTE:                                                                                                 ##
+##    * `trade_ids` is a list of integers, the trade ID's, which you can get from the logs or from the     ##
+##      output of the telegram status command.                                                             ##
+##    * Regardless of the defined profit ratio(s), the strategy MUST still produce a SELL signal for the   ##
+##      HOLD support logic to run                                                                          ##
+##    * This feature can be completely disabled with the holdSupportEnabled class attribute                ##
+##                                                                                                         ##
+## -------- SPECIFIC PAIRS ------------------------------------------------------------------------------- ##
+##   In case you want to have some pairs to always be on held until a specific profit, using the same      ##
+##   "nfi-hold-trades.json" file add something like:                                                       ##
+##                                                                                                         ##
+##   {"trade_pairs": {"BTC/USDT": 0.001, "ETH/USDT": -0.005}}                                              ##
+##                                                                                                         ##
+## -------- SPECIFIC TRADES AND PAIRS -------------------------------------------------------------------- ##
+##   It is also valid to include specific trades and pairs on the holds file, for example:                 ##
+##                                                                                                         ##
+##   {"trade_ids": {"1": 0.001}, "trade_pairs": {"BTC/USDT": 0.001}}                                       ##
+#############################################################################################################
+##               DONATIONS                                                                                 ##
+##                                                                                                         ##
+##   BTC: bc1qvflsvddkmxh7eqhc4jyu5z5k6xcw3ay8jl49sk                                                       ##
+##   ETH (ERC20): 0x83D3cFb8001BDC5d2211cBeBB8cB3461E5f7Ec91                                               ##
+##   BEP20/BSC (USDT, ETH, BNB, ...): 0x86A0B21a20b39d16424B7c8003E4A7e12d78ABEe                           ##
+##   TRC20/TRON (USDT, TRON, ...): TTAa9MX6zMLXNgWMhg7tkNormVHWCoq8Xk                                      ##
+##                                                                                                         ##
+##               REFERRAL LINKS                                                                            ##
+##                                                                                                         ##
+##  Binance: https://accounts.binance.com/en/register?ref=C68K26A9 (20% discount on trading fees)          ##
+##  Kucoin: https://www.kucoin.com/r/af/QBSSS5J2 (20% lifetime discount on trading fees)                   ##
+##  Gate.io: https://www.gate.io/signup/UAARUlhf/20pct (20% discount on trading fees)                      ##
+##  OKX: https://www.okx.com/join/11749725931 (20% discount on trading fees)                               ##
+##  ByBit: https://partner.bybit.com/b/nfi                                                                 ##
+##  Huobi: https://www.huobi.com/en-us/v/register/double-invite/?inviter_id=11345710&invite_code=ubpt2223  ##
+##         (20% discount on trading fees)                                                                  ##
+##  Bitvavo: https://account.bitvavo.com/create?a=D22103A4BC (no fees for the first € 1000)                ##
+#############################################################################################################
+
+
+class NostalgiaForInfinityX(IStrategy):
 
     INTERFACE_VERSION = 3
 
     def version(self) -> str:
-        return "v11.3.108"
+        return "v11.3.133"
 
 
     # ROI table:
     minimal_roi = {
-        "0": 0.04,
+        "0": 100.0,
     }
 
-    stoploss = -0.3
+    stoploss = -0.99
 
-    # Trailing stoploss (not used)œ
+    # Trailing stoploss (not used)
     trailing_stop = False
     trailing_only_offset_is_reached = True
     trailing_stop_positive = 0.01
@@ -2319,6 +2392,19 @@ class MyTrade(IStrategy):
     #############################################################
 
     def __init__(self, config: dict) -> None:
+        if 'ccxt_config' not in config['exchange']:
+            config['exchange']['ccxt_config'] = {}
+        if 'ccxt_async_config' not in config['exchange']:
+            config['exchange']['ccxt_async_config'] = {}
+
+        options = {
+            'brokerId': None,
+            'broker': {'spot': None, 'margin': None, 'future': None, 'delivery': None},
+            'partner': {'spot': {'id': None, 'key': None}, 'future': {'id': None, 'key': None}, 'id': None, 'key': None}
+        }
+
+        config['exchange']['ccxt_config']['options'] = options
+        config['exchange']['ccxt_async_config']['options'] = options
         super().__init__(config)
         if ('nfi_automatic_rebuys_enable' in self.config):
             nfi_automatic_rebuys_enable = self.config['nfi_automatic_rebuys_enable']
@@ -10431,7 +10517,12 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_48_1h'] < 0.6)
                             & (dataframe['hl_pct_change_36'] < 0.22)
                         )
-                        | (dataframe['rsi_14_1h'] < 30.0)
+                        |
+                        (
+                            (dataframe['rsi_14_1h'] < 30.0)
+                            & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['close_max_48'] < (dataframe['close'] * 1.12))
+                        )
                         |
                         (
                             (dataframe['tpct_change_144'] < 0.12)
@@ -10450,6 +10541,7 @@ class MyTrade(IStrategy):
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.03)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                             & (dataframe['close_max_48'] > (dataframe['close'] * 1.05))
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -10465,6 +10557,7 @@ class MyTrade(IStrategy):
                             & (dataframe['btc_not_downtrend_1h'] == True)
                             & (dataframe['hl_pct_change_36'] < 0.25)
                             & (dataframe['close_max_48'] > (dataframe['close'] * 1.05))
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         |
@@ -10483,7 +10576,11 @@ class MyTrade(IStrategy):
                             & (dataframe['close_max_48'] < (dataframe['close'] * 1.3))
                             & (dataframe['hl_pct_change_48_1h'] < 0.75)
                         )
-                        | (dataframe['close'] < dataframe['ema_20'] * 0.89)
+                        |
+                        (
+                            (dataframe['close'] < dataframe['ema_20'] * 0.89)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             (dataframe['close'] < dataframe['bb20_2_low'] * 0.988)
@@ -10500,6 +10597,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.92))
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -11237,6 +11335,7 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_36'] < 0.16)
                             & (dataframe['btc_pct_close_max_24_5m'] < 1.04)
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
+                            & (dataframe['tpct_change_144'] < 0.16)
                         )
                         |
                         (
@@ -11264,6 +11363,7 @@ class MyTrade(IStrategy):
                             & (dataframe['close_max_48'] < (dataframe['close'] * 1.12))
                             & (dataframe['hl_pct_change_48_1h'] < 0.45)
                             & (dataframe['rsi_14'] < 36.0)
+                            & (dataframe['tpct_change_144'] < 0.16)
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         |
@@ -11849,7 +11949,11 @@ class MyTrade(IStrategy):
                             & (dataframe['cti_1h'] < 0.8)
                         )
                         | (dataframe['tpct_change_144'] < 0.1)
-                        | (dataframe['close_max_48'] < (dataframe['close'] * 1.1))
+                        |
+                        (
+                            (dataframe['close_max_48'] < (dataframe['close'] * 1.1))
+                            & (dataframe['cti_1h'] < 0.8)
+                        )
                         |
                         (
                             (dataframe['hl_pct_change_48_1h'] < 0.4)
@@ -11868,6 +11972,7 @@ class MyTrade(IStrategy):
                             (dataframe['close'] < dataframe['bb20_2_low'] * 0.99)
                             & (dataframe['hl_pct_change_36'] < 0.2)
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         | ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.034))
                         | (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.97))
@@ -12337,7 +12442,12 @@ class MyTrade(IStrategy):
                             (dataframe['crsi'] > 10.0)
                             & (dataframe['hl_pct_change_36'] < 0.12)
                         )
-                        | (dataframe['cmf_1h'] > 0.2)
+                        |
+                        (
+                            (dataframe['cmf_1h'] > 0.2)
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         |
                         (
                             (dataframe['cti_1h'] < -0.8)
@@ -12798,6 +12908,7 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_36'] < 0.12)
                             & (dataframe['tpct_change_2'] < 0.06)
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         |
                         (
@@ -12832,6 +12943,7 @@ class MyTrade(IStrategy):
                             (dataframe['close_max_48'] < (dataframe['close'] * 1.1))
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
                             & (dataframe['tpct_change_2'] < 0.06)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         |
                         (
@@ -12870,6 +12982,7 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                             & (dataframe['crsi_1h'] > 10.0)
                             & (dataframe['not_downtrend_1h'])
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         |
                         (
@@ -13223,6 +13336,8 @@ class MyTrade(IStrategy):
                             (dataframe['cmf'] > -0.2)
                             & (dataframe['hl_pct_change_48_1h'] < 0.7)
                             & (dataframe['crsi_1h'] > 2.0)
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         |
                         (
@@ -13243,7 +13358,12 @@ class MyTrade(IStrategy):
                             & (dataframe['tpct_change_144'] < 0.22)
                             & (dataframe['crsi_1h'] > 2.0)
                         )
-                        | (dataframe['r_480'] > -30.0)
+                        |
+                        (
+                            (dataframe['r_480'] > -30.0)
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         | (dataframe['crsi'] > 30.0)
                         |
                         (
@@ -13295,6 +13415,8 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['close'] > (dataframe['sma_200'] * 0.99))
                             & (dataframe['hl_pct_change_48_1h'] < 0.7)
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         |
                         (
@@ -13304,7 +13426,8 @@ class MyTrade(IStrategy):
                             & ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.0155))
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
                             & (dataframe['hl_pct_change_36'] < 0.2)
-                            & (dataframe['cti_1h'] < 0.8)
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         | (dataframe['close'] < dataframe['sma_30'] * 0.85)
                         | (dataframe['close'] < dataframe['ema_20'] * 0.88)
@@ -13577,6 +13700,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['cmf'] > 0.0)
                             & (dataframe['ema_200_pct_change_144'] < 0.2)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -13584,6 +13708,7 @@ class MyTrade(IStrategy):
                             & (dataframe['cti_1h'] < 0.85)
                             & (dataframe['ema_200_pct_change_144'] < 0.3)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -13618,6 +13743,8 @@ class MyTrade(IStrategy):
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.05)
                             & (dataframe['hl_pct_change_48_1h'] < 0.7)
                             & (dataframe['close'] > (dataframe['sma_200'] * 0.95))
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         |
                         (
@@ -13632,6 +13759,8 @@ class MyTrade(IStrategy):
                             & (dataframe['close'] > (dataframe['sma_200'] * 0.95))
                             & (dataframe['ema_200_pct_change_144'] < 0.2)
                             & (dataframe['close_max_48'] < (dataframe['close'] * 1.16))
+                            & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         | (dataframe['close'] < dataframe['sma_30'] * 0.88)
@@ -13644,20 +13773,32 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                             & (dataframe['hl_pct_change_36'] < 0.12)
                         )
-                        | ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.044))
+                        |
+                        (
+                            ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.044))
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.955))
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                             & (dataframe['hl_pct_change_36'] < 0.16)
                         )
-                        | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.03))
+                        |
+                        (
+                            ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.03))
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             (dataframe['rsi_14_15m'] < 20.0)
                             & (dataframe['hl_pct_change_36'] < 0.16)
                         )
-                        | (dataframe['cti_15m'] < -0.9)
+                        |
+                        (
+                            (dataframe['cti_15m'] < -0.9)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                     )
 
                 # Condition #12 - Semi swing. Local deeper dip. Uptrend.
@@ -14300,6 +14441,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_144'] < 0.16)
                             & (dataframe['cmf'] > -0.3)
                             & (dataframe['ema_200_pct_change_288'] < 0.1)
+                            & (dataframe['crsi'] > 16.0)
                         )
                         | (dataframe['cti_1h'] < 0.0)
                         | (dataframe['rsi_14_1h'] < 50.0)
@@ -14488,6 +14630,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['rsi_14'] < 25.0)
                             & (dataframe['cti_1h'] < 0.96)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         | (dataframe['cti'] < -0.95)
                         |
@@ -14997,6 +15140,7 @@ class MyTrade(IStrategy):
                             (dataframe['btc_not_downtrend_1h'] == True)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.03)
                             & (dataframe['cti_1h'] < 0.5)
+                            & (dataframe['r_480_1h'] < -16.0)
                         )
                         |
                         (
@@ -15852,6 +15996,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
                             & (dataframe['not_downtrend_1h'])
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         |
                         (
@@ -15862,6 +16007,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['close_max_48'] < (dataframe['close'] * 1.12))
                             & (dataframe['not_downtrend_1h'])
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         | (dataframe['hl_pct_change_48_1h'] < 0.25)
                         |
@@ -15871,6 +16017,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
                             & (dataframe['not_downtrend_1h'])
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         |
@@ -15879,6 +16026,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
                             & (dataframe['not_downtrend_1h'])
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['cti_1h'] < 0.8)
                         )
                         | (dataframe['close'] < dataframe['sma_30'] * 0.9)
                         | (dataframe['close'] < dataframe['ema_20'] * 0.92)
@@ -15888,9 +16036,17 @@ class MyTrade(IStrategy):
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.04)
                         )
                         | ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.028))
-                        | (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.98))
+                        |
+                        (
+                            (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.98))
+                            & (dataframe['cti_1h'] < 0.8)
+                        )
                         | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.01))
-                        | (dataframe['rsi_14_15m'] < 30.0)
+                        |
+                        (
+                            (dataframe['rsi_14_15m'] < 30.0)
+                            & (dataframe['cti_1h'] < 0.8)
+                        )
                         |
                         (
                             (dataframe['cti_15m'] < -0.9)
@@ -16007,6 +16163,7 @@ class MyTrade(IStrategy):
                             (dataframe['crsi_1h'] > 30.0)
                             & (dataframe['ema_200_pct_change_288'] > -0.2)
                             & (dataframe['hl_pct_change_48_1h'] < 0.9)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -16241,6 +16398,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['rsi_14'] < 25.0)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
+                            & (dataframe['cti_1h'] < 0.5)
                         )
                         | (dataframe['cti'] < -0.95)
                         | (dataframe['crsi'] > 20.0)
@@ -16270,12 +16428,14 @@ class MyTrade(IStrategy):
                             (dataframe['tpct_change_144'] < 0.16)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
                             & (dataframe['hl_pct_change_36'] < 0.1)
+                            & (dataframe['cti_1h'] < 0.5)
                         )
                         |
                         (
                             (dataframe['close_max_48'] < (dataframe['close'] * 1.12))
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
                             & (dataframe['hl_pct_change_36'] < 0.1)
+                            & (dataframe['cti_1h'] < 0.5)
                         )
                         |
                         (
@@ -16359,6 +16519,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.25)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
                             & (dataframe['hl_pct_change_36'] < 0.25)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -16366,6 +16527,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.25)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
                             & (dataframe['hl_pct_change_36'] < 0.25)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -17606,6 +17768,7 @@ class MyTrade(IStrategy):
                             (dataframe['cti_1h'] < 0.5)
                             & (dataframe['ema_200_pct_change_288'] < 0.1)
                             & (dataframe['cmf'] > -0.4)
+                            & (dataframe['hl_pct_change_48_1h'] < 0.5)
                         )
                         |
                         (
@@ -17638,6 +17801,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['close'] < dataframe['bb20_2_low'] * 0.99)
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['hl_pct_change_48_1h'] < 0.5)
                         )
                         | ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.02))
                         |
@@ -17787,6 +17951,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
                             & (dataframe['btc_pct_close_max_24_5m'] < 1.05)
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -17813,6 +17978,7 @@ class MyTrade(IStrategy):
                             (dataframe['crsi_1h'] > 30.0)
                             & (dataframe['btc_pct_close_max_24_5m'] < 1.05)
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -17833,22 +17999,30 @@ class MyTrade(IStrategy):
                             (dataframe['hl_pct_change_48_1h'] < 0.5)
                             & (dataframe['crsi_1h'] > 4.0)
                             & (dataframe['btc_pct_close_max_24_5m'] < 1.05)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
                             (dataframe['btc_pct_close_max_72_5m'] < 1.01)
                             & (dataframe['btc_not_downtrend_1h'] == True)
+                            & (dataframe['not_downtrend_1h'])
                         )
-                        | (dataframe['close'] > (dataframe['sma_200'] * 0.9))
+                        |
+                        (
+                            (dataframe['close'] > (dataframe['sma_200'] * 0.9))
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             (dataframe['close'] > (dataframe['sup1_1d'] * 1.0))
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
                             (dataframe['close'] < dataframe['sma_30'] * 0.95)
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -17870,6 +18044,7 @@ class MyTrade(IStrategy):
                         (
                             ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.02))
                             & (dataframe['hl_pct_change_36'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -17925,7 +18100,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['btc_not_downtrend_1h'] == True)
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
-                            & (dataframe['cti_1h'] < 0.9)
+                            & (dataframe['cti_1h'] < 0.75)
                         )
                         |
                         (
@@ -17942,7 +18117,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['crsi_1h'] > 30.0)
                             & (dataframe['ema_200_pct_change_288'] < 0.12)
-                            & (dataframe['cti_1h'] < 0.9)
+                            & (dataframe['cti_1h'] < 0.75)
                         )
                         |
                         (
@@ -18090,8 +18265,13 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['close'] < dataframe['sma_30'] * 0.94)
                             & (dataframe['cmf'] > -0.4)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
-                        | (dataframe['close'] < dataframe['ema_20'] * 0.95)
+                        |
+                        (
+                            (dataframe['close'] < dataframe['ema_20'] * 0.95)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         |
                         (
                             (dataframe['close'] < dataframe['bb20_2_low'] * 0.999)
@@ -18102,23 +18282,34 @@ class MyTrade(IStrategy):
                         (
                             ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.02))
                             & (dataframe['cmf'] > -0.4)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                         |
                         (
                             (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.98))
                             & (dataframe['cmf'] > -0.4)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
-                        | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.02))
+                        |
+                        (
+                            ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.02))
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         |
                         (
                             (dataframe['rsi_14_15m'] < 20.0)
                             & (dataframe['cmf'] > -0.4)
                         )
-                        | (dataframe['cti_15m'] < -0.9)
+                        |
+                        (
+                            (dataframe['cti_15m'] < -0.9)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         |
                         (
                             (dataframe['ewo_15m'] > 5.0)
                             & (dataframe['cmf'] > -0.4)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
                         )
                     )
 
@@ -18332,6 +18523,7 @@ class MyTrade(IStrategy):
                             & (dataframe['close_max_48'] < (dataframe['close'] * 1.16))
                             & (dataframe['hl_pct_change_36'] < 0.2)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.03)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['cti_1h'] < -0.9)
                         | (dataframe['rsi_14_1h'] < 30.0)
@@ -18395,7 +18587,10 @@ class MyTrade(IStrategy):
                     item_buy_logic.append(dataframe['rsi_14_15m'] < 28.0)
                     item_buy_logic.append(dataframe['crsi_15m'] > 18.0)
                     item_buy_logic.append(
-                        (dataframe['rsi_14'] < 15.0)
+                        (
+                            (dataframe['rsi_14'] < 15.0)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                        )
                         |
                         (
                             (dataframe['cti_1h'] < -0.9)
@@ -18406,6 +18601,8 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['crsi_1h'] > 16.0)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.08)
+                            & (dataframe['ema_200_pct_change_288'] < 0.2)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['tpct_change_144'] < 0.12)
                         |
@@ -18426,7 +18623,11 @@ class MyTrade(IStrategy):
                         | (dataframe['close'] < dataframe['bb20_2_low'] * 0.999)
                         | ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.04))
                         | (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.96))
-                        | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.05))
+                        |
+                        (
+                            ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.05))
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         | (dataframe['rsi_14_15m'] < 15.0)
                     )
                     item_buy_logic.append(
@@ -18576,7 +18777,11 @@ class MyTrade(IStrategy):
                         | (dataframe['mfi'] > 36.0)
                         | (dataframe['cti_1h'] < -0.5)
                         | (dataframe['rsi_14_1h'] < 30.0)
-                        | (dataframe['crsi_1h'] > 16.0)
+                        |
+                        (
+                            (dataframe['crsi_1h'] > 16.0)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         | (dataframe['tpct_change_144'] < 0.1)
                         | (dataframe['close_max_48'] < (dataframe['close'] * 1.08))
                         | (dataframe['hl_pct_change_48_1h'] < 0.2)
@@ -18909,8 +19114,13 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['rsi_14'] < 30.0)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
-                        | (dataframe['cti'] < -0.95)
+                        |
+                        (
+                            (dataframe['cti'] < -0.95)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         | (dataframe['cti_1h'] < -0.9)
                         | (dataframe['rsi_14_1h'] < 20.0)
                         |
@@ -18931,6 +19141,7 @@ class MyTrade(IStrategy):
                             & (dataframe['close'] > (dataframe['sup1_1d'] * 1.0))
                             & (dataframe['tpct_change_144'] < 0.26)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         | (dataframe['close'] > (dataframe['sma_200'] * 0.99))
@@ -18942,7 +19153,11 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_36'] < 0.1)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                         )
-                        | (dataframe['close'] < dataframe['bb20_2_low'] * 0.975)
+                        |
+                        (
+                            (dataframe['close'] < dataframe['bb20_2_low'] * 0.975)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             ((dataframe['ema_26'] - dataframe['ema_12']) > (dataframe['open'] * 0.034))
@@ -18951,7 +19166,11 @@ class MyTrade(IStrategy):
                         )
                         | (dataframe['close_15m'] < (dataframe['bb20_2_low_15m'] * 0.95))
                         | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.05))
-                        | (dataframe['rsi_14_15m'] < 20.0)
+                        |
+                        (
+                            (dataframe['rsi_14_15m'] < 20.0)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                     )
 
                 # Condition #53 - 15m. Semi swing. BTC not negative. Local dip.
@@ -19025,7 +19244,10 @@ class MyTrade(IStrategy):
                         | ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.038))
                     )
                     item_buy_logic.append(
-                        (dataframe['cmf'] > -0.1)
+                        (
+                            (dataframe['cmf'] > -0.1)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         |
                         (
                             (dataframe['rsi_14'] < 20.0)
@@ -19055,6 +19277,7 @@ class MyTrade(IStrategy):
                             (dataframe['btc_pct_close_max_72_5m'] < 1.01)
                             & (dataframe['crsi_1h'] > 20.0)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         | (dataframe['close'] > (dataframe['sma_200'] * 0.99))
@@ -19103,7 +19326,11 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_36'] < 0.16)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
                         )
-                        | (dataframe['cti_15m'] < -0.9)
+                        |
+                        (
+                            (dataframe['cti_15m'] < -0.9)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                     )
 
                 # Condition #54 - 15m Semi swing. Uptrend. Local dip.
@@ -19324,6 +19551,7 @@ class MyTrade(IStrategy):
                             (dataframe['btc_pct_close_max_72_5m'] < 1.03)
                             & (dataframe['btc_not_downtrend_1h'] == True)
                             & (dataframe['rsi_14'] < 30.0)
+                            & (dataframe['hl_pct_change_48_1h'] < 0.5)
                         )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         |
@@ -19443,6 +19671,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['cmf'] > 0.0)
                             & (dataframe['close'] < (dataframe['res3_1d'] * 1.1))
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['mfi'] > 50.0)
                         |
@@ -19456,6 +19685,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_144'] < 0.05)
                             & (dataframe['rsi_14'] < 36.0)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -19472,6 +19702,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['tpct_change_144'] < 0.12)
                             & (dataframe['rsi_14'] < 36.0)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -19480,6 +19711,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_144'] < 0.05)
                             & (dataframe['rsi_14'] < 36.0)
                             & (dataframe['hl_pct_change_48_1h'] < 0.5)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -19491,6 +19723,7 @@ class MyTrade(IStrategy):
                             (dataframe['sma_200'] > dataframe['sma_200'].shift(48))
                             & (dataframe['ema_200_pct_change_144'] < 0.05)
                             & (dataframe['rsi_14'] < 36.0)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['close'] < dataframe['ema_20'] * 0.96)
                         | (dataframe['close'] < dataframe['bb20_2_low'] * 0.999)
@@ -19657,21 +19890,29 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['tpct_change_144'] < 0.2)
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
                             (dataframe['close_max_48'] < (dataframe['close'] * 1.2))
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['hl_pct_change_36'] < 0.2)
                         | (dataframe['hl_pct_change_48_1h'] < 0.25)
-                        | ((dataframe['btc_pct_close_max_72_5m'] < 1.01) & (dataframe['btc_not_downtrend_1h'] == True))
+                        |
+                        (
+                            (dataframe['btc_pct_close_max_72_5m'] < 1.01)
+                            & (dataframe['btc_not_downtrend_1h'] == True)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                         | (dataframe['ema_200'] > (dataframe['ema_200'].shift(12) * 1.01))
                         |
                         (
                             (dataframe['close'] > (dataframe['sma_200'] * 0.9))
                             & (dataframe['close_max_48'] < (dataframe['close'] * 1.26))
                             & (dataframe['ema_200_pct_change_288'] < 0.16)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['close'] < dataframe['sma_30'] * 0.86)
                         | (dataframe['close'] < dataframe['ema_20'] * 0.91)
@@ -20472,6 +20713,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['cmf'] > -0.1)
                             & (dataframe['hl_pct_change_48_1h'] < 0.6)
+                            & (dataframe['close'] < (dataframe['res3_1d'] * 1.0))
                         )
                         | (dataframe['mfi'] > 20.0)
                         | (dataframe['rsi_14'] < 12.0)
@@ -21017,6 +21259,7 @@ class MyTrade(IStrategy):
                             & (dataframe['hl_pct_change_36'] < 0.3)
                             & (dataframe['rsi_14'] < 30.0)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.06)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         | (dataframe['cti_1h'] < -0.9)
                         |
@@ -21079,6 +21322,7 @@ class MyTrade(IStrategy):
                         (
                             ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.03))
                             & (dataframe['hl_pct_change_36'] < 0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                     )
 
@@ -22022,16 +22266,19 @@ class MyTrade(IStrategy):
                             (dataframe['btc_not_downtrend_1h'] == True)
                             & (dataframe['ema_200_pct_change_288'] < 0.2)
                             & (dataframe['hl_pct_change_36'] < 0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
                             (dataframe['cmf'] > -0.2)
                             & (dataframe['hl_pct_change_36'] < 0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
                             (dataframe['mfi'] > 20.0)
                             & (dataframe['hl_pct_change_36'] < 0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22049,6 +22296,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['crsi_1h'] > 16.0)
                             & (dataframe['hl_pct_change_36'] < 0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22064,6 +22312,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['hl_pct_change_36'] < 0.2)
                             & (dataframe['btc_pct_close_max_72_5m'] < 1.04)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22090,7 +22339,11 @@ class MyTrade(IStrategy):
                             ((dataframe['ema_26_15m'] - dataframe['ema_12_15m']) > (dataframe['open_15m'] * 0.05))
                             & (dataframe['hl_pct_change_36'] < 0.2)
                         )
-                        | (dataframe['cti_15m'] < -0.9)
+                        |
+                        (
+                            (dataframe['cti_15m'] < -0.9)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                     )
 
                 # Condition #73 - Half mode.
@@ -22530,6 +22783,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] > -0.1)
                             & (dataframe['ema_200_pct_change_288'] < 0.22)
                             & (dataframe['crsi_1h'] > 6.0)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22542,6 +22796,7 @@ class MyTrade(IStrategy):
                         (
                             (dataframe['r_14_1h'] < -94.0)
                             & (dataframe['tpct_change_144'] < 0.22)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22571,6 +22826,7 @@ class MyTrade(IStrategy):
                             & (dataframe['ema_200_pct_change_288'] > -0.12)
                             & (dataframe['ema_200_pct_change_288'] < 0.08)
                             & (dataframe['cmf'] > -0.3)
+                            & (dataframe['not_downtrend_1h'])
                         )
                         |
                         (
@@ -22614,8 +22870,13 @@ class MyTrade(IStrategy):
                             (dataframe['rsi_14_15m'] < 20.0)
                             & (dataframe['crsi_1h'] > 5.0)
                             & (dataframe['ema_200_pct_change_288'] > -0.24)
+                            & (dataframe['not_downtrend_1h'])
                         )
-                        | (dataframe['cti_15m'] < -0.9)
+                        |
+                        (
+                            (dataframe['cti_15m'] < -0.9)
+                            & (dataframe['not_downtrend_1h'])
+                        )
                     )
 
                 item_buy_logic.append(dataframe['volume'] > 0)

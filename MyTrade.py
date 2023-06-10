@@ -40,79 +40,8 @@ else:
     log.info("pandas_ta successfully imported")
 
 
-#############################################################################################################
-##                NostalgiaForInfinityX by iterativ                                                        ##
-##           https://github.com/iterativv/NostalgiaForInfinity                                             ##
-##                                                                                                         ##
-##    Strategy for Freqtrade https://github.com/freqtrade/freqtrade                                        ##
-##                                                                                                         ##
-#############################################################################################################
-##               GENERAL RECOMMENDATIONS                                                                   ##
-##                                                                                                         ##
-##   For optimal performance, suggested to use between 4 and 6 open trades, with unlimited stake.          ##
-##   A pairlist with 40 to 80 pairs. Volume pairlist works well.                                           ##
-##   Prefer stable coin (USDT, BUSDT etc) pairs, instead of BTC or ETH pairs.                              ##
-##   Highly recommended to blacklist leveraged tokens (*BULL, *BEAR, *UP, *DOWN etc).                      ##
-##   Ensure that you don't override any variables in you config.json. Especially                           ##
-##   the timeframe (must be 5m).                                                                           ##
-##     use_exit_signal must set to true (or not set at all).                                               ##
-##     exit_profit_only must set to false (or not set at all).                                             ##
-##     ignore_roi_if_entry_signal must set to true (or not set at all).                                    ##
-##                                                                                                         ##
-#############################################################################################################
-##               HOLD SUPPORT                                                                              ##
-##                                                                                                         ##
-## -------- SPECIFIC TRADES ------------------------------------------------------------------------------ ##
-##   In case you want to have SOME of the trades to only be sold when on profit, add a file named          ##
-##   "nfi-hold-trades.json" in the user_data directory                                                     ##
-##                                                                                                         ##
-##   The contents should be similar to:                                                                    ##
-##                                                                                                         ##
-##   {"trade_ids": [1, 3, 7], "profit_ratio": 0.005}                                                       ##
-##                                                                                                         ##
-##   Or, for individual profit ratios(Notice the trade ID's as strings:                                    ##
-##                                                                                                         ##
-##   {"trade_ids": {"1": 0.001, "3": -0.005, "7": 0.05}}                                                   ##
-##                                                                                                         ##
-##   NOTE:                                                                                                 ##
-##    * `trade_ids` is a list of integers, the trade ID's, which you can get from the logs or from the     ##
-##      output of the telegram status command.                                                             ##
-##    * Regardless of the defined profit ratio(s), the strategy MUST still produce a SELL signal for the   ##
-##      HOLD support logic to run                                                                          ##
-##    * This feature can be completely disabled with the holdSupportEnabled class attribute                ##
-##                                                                                                         ##
-## -------- SPECIFIC PAIRS ------------------------------------------------------------------------------- ##
-##   In case you want to have some pairs to always be on held until a specific profit, using the same      ##
-##   "nfi-hold-trades.json" file add something like:                                                       ##
-##                                                                                                         ##
-##   {"trade_pairs": {"BTC/USDT": 0.001, "ETH/USDT": -0.005}}                                              ##
-##                                                                                                         ##
-## -------- SPECIFIC TRADES AND PAIRS -------------------------------------------------------------------- ##
-##   It is also valid to include specific trades and pairs on the holds file, for example:                 ##
-##                                                                                                         ##
-##   {"trade_ids": {"1": 0.001}, "trade_pairs": {"BTC/USDT": 0.001}}                                       ##
-#############################################################################################################
-##               DONATIONS                                                                                 ##
-##                                                                                                         ##
-##   BTC: bc1qvflsvddkmxh7eqhc4jyu5z5k6xcw3ay8jl49sk                                                       ##
-##   ETH (ERC20): 0x83D3cFb8001BDC5d2211cBeBB8cB3461E5f7Ec91                                               ##
-##   BEP20/BSC (USDT, ETH, BNB, ...): 0x86A0B21a20b39d16424B7c8003E4A7e12d78ABEe                           ##
-##   TRC20/TRON (USDT, TRON, ...): TTAa9MX6zMLXNgWMhg7tkNormVHWCoq8Xk                                      ##
-##                                                                                                         ##
-##               REFERRAL LINKS                                                                            ##
-##                                                                                                         ##
-##  Binance: https://accounts.binance.com/en/register?ref=C68K26A9 (20% discount on trading fees)          ##
-##  Kucoin: https://www.kucoin.com/r/af/QBSSS5J2 (20% lifetime discount on trading fees)                   ##
-##  Gate.io: https://www.gate.io/signup/UAARUlhf/20pct (20% discount on trading fees)                      ##
-##  OKX: https://www.okx.com/join/11749725931 (20% discount on trading fees)                               ##
-##  ByBit: https://partner.bybit.com/b/nfi                                                                 ##
-##  Huobi: https://www.huobi.com/en-us/v/register/double-invite/?inviter_id=11345710&invite_code=ubpt2223  ##
-##         (20% discount on trading fees)                                                                  ##
-##  Bitvavo: https://account.bitvavo.com/create?a=D22103A4BC (no fees for the first € 1000)                ##
-#############################################################################################################
 
-
-class NostalgiaForInfinityX(IStrategy):
+class MyTrade(IStrategy):
 
     INTERFACE_VERSION = 3
 
@@ -122,7 +51,7 @@ class NostalgiaForInfinityX(IStrategy):
 
     # ROI table:
     minimal_roi = {
-        "0": 100.0,
+        "0": 0.045,
     }
 
     stoploss = -0.99
@@ -173,12 +102,12 @@ class NostalgiaForInfinityX(IStrategy):
     nfi_automatic_rebuys_enable = False
     rebuy_mode = 0
     max_rebuy_orders_0 = 4
-    max_rebuy_orders_1 = 2
+    max_rebuy_orders_1 = 4
     max_rebuy_orders_2 = 4
     max_rebuy_orders_2_alt = 2
-    max_rebuy_orders_3 = 1
-    max_rebuy_orders_4 = 3
-    max_rebuy_orders_5 = 2
+    max_rebuy_orders_3 = 4
+    max_rebuy_orders_4 = 4
+    max_rebuy_orders_5 = 4  
     max_rebuy_multiplier_lev = 0.5 # for leveraged tokens
     max_rebuy_multiplier_0 = 1.0
     max_rebuy_multiplier_1 = 1.0
@@ -186,19 +115,30 @@ class NostalgiaForInfinityX(IStrategy):
     max_rebuy_multiplier_3 = 1.0
     max_rebuy_multiplier_4 = 0.1
     max_rebuy_multiplier_5 = 0.35
-    rebuy_pcts_n_0 = (-0.04, -0.06, -0.09, -0.12)
-    rebuy_pcts_n_1 = (-0.06, -0.12)
-    rebuy_pcts_n_2 = (-0.03, -0.04, -0.06, -0.09)
-    rebuy_pcts_n_2_alt = (-0.03, -0.08)
-    rebuy_pcts_p_2 = (0.02, 0.025, 0.025, 0.03, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095)
-    rebuy_pcts_n_3 = (-0.06, -0.12)
-    rebuy_pcts_n_4 = (-0.02, -0.06, -0.1)
-    rebuy_pcts_n_5 = (-0.05, -0.08)
-    rebuy_multi_0 = 0.15
-    rebuy_multi_1 = 0.3
-    rebuy_multi_2 = 0.15
-    rebuy_multi_2_alt = 0.35
-    rebuy_multi_3 = 0.5
+    # rebuy_pcts_n_0 = (-0.04, -0.06, -0.09, -0.12)
+    # rebuy_pcts_n_1 = (-0.06, -0.12)
+    # rebuy_pcts_n_2 = (-0.03, -0.04, -0.06, -0.09)
+    # rebuy_pcts_n_2_alt = (-0.03, -0.08)
+    # rebuy_pcts_p_2 = (0.02, 0.025, 0.025, 0.03, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095)
+    # rebuy_pcts_n_3 = (-0.06, -0.12)
+    # rebuy_pcts_n_4 = (-0.02, -0.06, -0.1)
+    # rebuy_pcts_n_5 = (-0.05, -0.08)
+    
+    rebuy_pcts_n_0 = (-0.25,-0.25,-0.25,-0.25)
+    rebuy_pcts_n_1 = (-0.25,-0.25,-0.25,-0.25)
+    rebuy_pcts_n_2 = (-0.25,-0.25,-0.25,-0.25)
+    rebuy_pcts_n_2_alt = (-0.25,-0.25,-0.25,-0.25)
+    # rebuy_pcts_p_2 = (0.02, 0.025, 0.025, 0.03, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095)
+    rebuy_pcts_n_3 = (-0.25,-0.25,-0.25,-0.25)
+    rebuy_pcts_n_4 = (-0.25,-0.25,-0.25,-0.25)
+    rebuy_pcts_n_5 = (-0.25,-0.25,-0.25,-0.25)
+
+
+    rebuy_multi_0 = 1.0
+    rebuy_multi_1 = 1.0
+    rebuy_multi_2 = 1.0
+    rebuy_multi_2_alt = 1.0
+    rebuy_multi_3 = 1.0
     rebuy_multi_4 = 1.0
     rebuy_multi_5 = 1.0
 
@@ -2953,7 +2893,7 @@ class NostalgiaForInfinityX(IStrategy):
                 # temporary
                 and (trade.open_date_utc.replace(tzinfo=None) > datetime(2022, 5, 25) or is_backtest)
         ):
-            return True, 'sell_stoploss_stop_1'
+            return False, 'sell_stoploss_stop_1'
 
         if not is_btc_stake:
             if (
@@ -2962,14 +2902,14 @@ class NostalgiaForInfinityX(IStrategy):
                     # temporary
                      and (trade.open_date_utc.replace(tzinfo=None) >= datetime(2022, 8, 28) or is_backtest)
             ):
-                 return True, 'sell_stoploss_stop_2'
+                 return False, 'sell_stoploss_stop_2'
 
             if (
                     (current_profit < self.stop_thresholds_stable[stop_index])
                     # temporary
                     and (trade.open_date_utc.replace(tzinfo=None) >= datetime(2022, 9, 21) or is_backtest)
             ):
-                return True, 'sell_stoploss_stop_2'
+                return False, 'sell_stoploss_stop_2'
         else:
             # BTC/ETH stake
             if (
@@ -2978,14 +2918,14 @@ class NostalgiaForInfinityX(IStrategy):
                 # temporary
                 and (trade.open_date_utc.replace(tzinfo=None) > datetime(2022, 6, 13) or is_backtest)
             ):
-                return True, 'sell_stoploss_stop_2'
+                return False, 'sell_stoploss_stop_2'
 
             if (
                 (current_profit < self.stop_thresholds_btc[stop_index])
                 # temporary
                 and (trade.open_date_utc.replace(tzinfo=None) > datetime(2022, 9, 21) or is_backtest)
             ):
-                return True, 'sell_stoploss_stop_2'
+                return False, 'sell_stoploss_stop_2'
 
         return False, None
 
@@ -9419,7 +9359,7 @@ class NostalgiaForInfinityX(IStrategy):
         if (
                 (current_profit < [-0.35, -0.35][stop_index])
         ):
-            return True, 'sell_stoploss_rpd_stop_1'
+            return False, 'sell_stoploss_rpd_stop_1'
 
         return False, None
 
@@ -9429,7 +9369,7 @@ class NostalgiaForInfinityX(IStrategy):
         if (
                 (current_profit < [-0.35, -0.35][stop_index])
         ):
-            return True, 'sell_stoploss_hlf_stop_1'
+            return False, 'sell_stoploss_hlf_stop_1'
 
         return False, None
 

@@ -41,6 +41,8 @@ else:
 
 
 
+
+
 class MyTrade(IStrategy):
 
     INTERFACE_VERSION = 3
@@ -51,7 +53,7 @@ class MyTrade(IStrategy):
 
     # ROI table:
     minimal_roi = {
-        "0": 0.045,
+        "0": 0.04,
     }
 
     stoploss = -0.99
@@ -99,7 +101,7 @@ class MyTrade(IStrategy):
 
     # Rebuy feature
     position_adjustment_enable = True
-    nfi_automatic_rebuys_enable = False
+    nfi_automatic_rebuys_enable = True
     rebuy_mode = 0
     max_rebuy_orders_0 = 4
     max_rebuy_orders_1 = 4
@@ -2555,6 +2557,7 @@ class MyTrade(IStrategy):
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
                             entry_tag: Optional[str], side: str, **kwargs) -> float:
         if self.position_adjustment_enable and self.nfi_automatic_rebuys_enable:
+        # if (self.position_adjustment_enable == True):
             use_mode = self.rebuy_mode
             if ('rebuy_mode' in self.config):
                 use_mode = self.config['rebuy_mode']
@@ -2897,7 +2900,7 @@ class MyTrade(IStrategy):
 
         if not is_btc_stake:
             if (
-                    (current_profit < [-0.35, -0.35, -0.35][stop_index])
+                    (current_profit < [-0.7, -0.7, -0.7][stop_index])
                     and (current_time - timedelta(hours=1) > trade.open_date_utc)
                     # temporary
                      and (trade.open_date_utc.replace(tzinfo=None) >= datetime(2022, 8, 28) or is_backtest)
@@ -3632,7 +3635,8 @@ class MyTrade(IStrategy):
                         return True, 'sell_profit_u_bear_3_7'
                 elif 0.03 > current_profit >= 0.02:
                     if (last_candle['rsi_14'] < 39.0):
-                        return True, 'sell_profit_u_bear_2_1'
+                        # return False, 'sell_profit_u_bear_2_1'
+                        return False, 'sell_profit_u_bear_2_1'
                     elif (last_candle['rsi_14'] < 50.0) and (last_candle['cmf'] < -0.4):
                         return True, 'sell_profit_u_bear_2_2'
                     elif (last_candle['rsi_14'] < 42.0) and (last_candle['cmf'] < -0.0) and (last_candle['cmf_15m'] < -0.0) and (last_candle['cmf_1h'] < -0.0):
@@ -9449,28 +9453,28 @@ class MyTrade(IStrategy):
                 elif (0.12 <= current_profit):
                     if ((current_profit < (previous_profit - 0.03)) or (last_candle['rsi_14'] > 90.0)):
                         return True, previous_sell_reason
-            elif (previous_sell_reason in ["sell_profit_maximizer_01"]) and (current_profit >= 0.01):
-                if (0.001 <= current_profit < 0.01):
-                    if ((current_profit < (previous_profit - 0.01)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.01 <= current_profit < 0.02):
-                    if ((current_profit < (previous_profit - 0.01)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.02 <= current_profit < 0.03):
-                    if ((current_profit < (previous_profit - 0.02)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.03 <= current_profit < 0.05):
-                    if ((current_profit < (previous_profit - 0.03)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.05 <= current_profit < 0.08):
-                    if ((current_profit < (previous_profit - 0.04)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.08 <= current_profit < 0.12):
-                    if ((current_profit < (previous_profit - 0.05)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
-                elif (0.12 <= current_profit):
-                    if ((current_profit < (previous_profit - 0.06)) or (last_candle['rsi_14'] > 90.0)):
-                        return True, previous_sell_reason
+            # elif (previous_sell_reason in ["sell_profit_maximizer_01"]) and (current_profit >= 0.01):
+            #     if (0.001 <= current_profit < 0.01):
+            #         if ((current_profit < (previous_profit - 0.01)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.01 <= current_profit < 0.02):
+            #         if ((current_profit < (previous_profit - 0.01)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.02 <= current_profit < 0.03):
+            #         if ((current_profit < (previous_profit - 0.02)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.03 <= current_profit < 0.05):
+            #         if ((current_profit < (previous_profit - 0.03)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.05 <= current_profit < 0.08):
+            #         if ((current_profit < (previous_profit - 0.04)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.08 <= current_profit < 0.12):
+            #         if ((current_profit < (previous_profit - 0.05)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
+            #     elif (0.12 <= current_profit):
+            #         if ((current_profit < (previous_profit - 0.06)) or (last_candle['rsi_14'] > 90.0)):
+            #             return True, previous_sell_reason
             else:
                 if (0.001 <= current_profit < 0.01):
                     if ((current_profit < (previous_profit - 0.005)) or (last_candle['rsi_14'] > 90.0)):

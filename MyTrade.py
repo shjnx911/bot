@@ -158,7 +158,7 @@ class MyTrade(IStrategy):
     short_normal_mode_name = "short_normal"
 
     is_futures_mode = True
-    futures_mode_leverage = 10.0
+    futures_mode_leverage = 10
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 480
@@ -9384,7 +9384,7 @@ class MyTrade(IStrategy):
                  proposed_leverage: float, max_leverage: float, entry_tag: Optional[str], side: str,
                  **kwargs) -> float:
 
-        return self.futures_mode_leverage
+        return futures_mode_leverage
     
     def sell_profit_target(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, last_candle, previous_candle_1, previous_rate, previous_profit,  previous_sell_reason, previous_time_profit_reached, enter_tags) -> tuple:
         if self.profit_max_enabled:

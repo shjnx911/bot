@@ -295,7 +295,7 @@ def calculate_technical_indicators():
     Ichimoku_Cloud = [tenkan_sens, kijun_sens, senkou_span_as, senkou_span_bs]
 
 
-    global df8hour
+    #global df8hour
     df8hour['sma'] = sma_values
     df8hour["rsi"] = rsi_values
     df8hour["macd"] = macd_values
@@ -430,7 +430,7 @@ def trading_strategy(predictions, normalized_df):
         return True
                 
     if maxximum_price == 0 or (max_price > maxximum_price and pricemove()):
-        global maxximum_price
+        #global maxximum_price
         maxximum_price = max_price
     
     #BUY
@@ -452,9 +452,9 @@ def trading_strategy(predictions, normalized_df):
                 type=order_type,
                 quantity=quantity
             )
-            global bought_price
+            #global bought_price
             bought_price = current_price
-            global maxximum_price
+            #global maxximum_price
             maxximum_price = max_price
             global to_report
             to_report['bought_price'] = bought_price
@@ -479,9 +479,9 @@ def trading_strategy(predictions, normalized_df):
                 print("Stop loss order placed!")
 
             if current_price <= bought_price:
-                global maxximum_price
+                #global maxximum_price
                 maxximum_price = 0
-                global bought_price
+                #global bought_price
                 bought_price = 0
 
     #SELL

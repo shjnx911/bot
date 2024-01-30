@@ -26,7 +26,7 @@ symbol = 'SOLUSDT'
 intervals = ['3m','5m', '15m', '1h', '2h', '4h']#144 48 12 6 2
                             # Start time in milliseconds (e.g., Jan 1, 2021)
                             # End time in milliseconds (e.g., May 31, 2021)
-client = Client('idGVDQFy7Ij9BEC6674W6rzWHhMDONWRymqNzcv2YPo6S0vrxwdfwD0P75KEtENp', 'OtPBpxN60ofE0gc3YmkrvM6C1Dm6476aJaIkf5cycG2IHNDgpUa1ghbDwCJVoZKL')
+client = Client('idGVDQFy7Ij9BEC6674W6rzWHhMDONWRymqNzcv2YPo6S0vrxwdfwD0P75KEtENp', '')
 
 
 # GLOBAL variables
@@ -295,7 +295,7 @@ def calculate_technical_indicators():
     Ichimoku_Cloud = [tenkan_sens, kijun_sens, senkou_span_as, senkou_span_bs]
 
 
-    #global df8hour
+    global df8hour
     df8hour['sma'] = sma_values
     df8hour["rsi"] = rsi_values
     df8hour["macd"] = macd_values
@@ -340,7 +340,6 @@ def calculate_rmse(predicted_values, actual_values):
     return rmse
 
 def training_process():
-    global df8hour
     #for 1 week data
     week_start = int(datetime.datetime(2021, 1, 1, 0, 0, 0).timestamp())
     week_end = int(datetime.datetime(2021, 1, 7, 23, 59, 59).timestamp())
@@ -365,7 +364,7 @@ def training_process():
     for i in range(20):
         while True:        
             #get 8 hour time
-            #global df8hour
+            global df8hour
             df8hour = normalized_df.loc[(normalized_df['timestamp'] >= start_time) & (normalized_df['timestamp'] <= end_time)].copy()
 
             #technical indicator calculation
@@ -431,7 +430,7 @@ def trading_strategy(predictions, normalized_df):
         return True
                 
     if maxximum_price == 0 or (max_price > maxximum_price and pricemove()):
-        #global maxximum_price
+        global maxximum_price
         maxximum_price = max_price
     
     #BUY
@@ -453,9 +452,9 @@ def trading_strategy(predictions, normalized_df):
                 type=order_type,
                 quantity=quantity
             )
-            #global bought_price
+            global bought_price
             bought_price = current_price
-            #global maxximum_price
+            global maxximum_price
             maxximum_price = max_price
             global to_report
             to_report['bought_price'] = bought_price
@@ -480,9 +479,9 @@ def trading_strategy(predictions, normalized_df):
                 print("Stop loss order placed!")
 
             if current_price <= bought_price:
-               # global maxximum_price
+                global maxximum_price
                 maxximum_price = 0
-                #global bought_price
+                global bought_price
                 bought_price = 0
 
     #SELL

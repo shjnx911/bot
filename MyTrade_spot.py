@@ -51,7 +51,7 @@ class MyTrade_spot(IStrategy):
 
     # ROI table:
     minimal_roi = {
-        "0": 0.05,
+        "0": 0.04,
     }
 
     stoploss = -0.99
@@ -69,7 +69,7 @@ class MyTrade_spot(IStrategy):
     res_timeframe = 'none'
     info_timeframe_1d = '1d'
     info_timeframe_1h = '1h'
-    info_timeframe_30m = '30m'
+    info_timeframe_15m = '15m'
 
     # BTC informative
     has_BTC_base_tf = True
@@ -115,21 +115,27 @@ class MyTrade_spot(IStrategy):
     max_rebuy_multiplier_3 = 0.05
     max_rebuy_multiplier_4 = 0.1
     max_rebuy_multiplier_5 = 0.35
-    rebuy_pcts_n_0 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
-    rebuy_pcts_n_1 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
-    rebuy_pcts_n_2 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_0 = (-0.2,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_1 = (-0.25,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_2 = (-0.3,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_2_alt = (-0.03, -0.08)
+  # rebuy_pcts_n_3 = (-0.25,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_4 = (-0.25,-0.3,-0.3,-0.3,-0.3)
+  # rebuy_pcts_n_5 = (-0.25,-0.3,-0.3,-0.3,-0.3)
+    rebuy_pcts_n_0 = (-0.30,-0.30,-0.30,-0.30,-0.30)
+    rebuy_pcts_n_1 = (-0.30,-0.30,-0.30,-0.30,-0.30)
+    rebuy_pcts_n_2 = (-0.30,-0.30,-0.30,-0.30,-0.30)
     rebuy_pcts_n_2_alt = (-0.03, -0.08)
-    # rebuy_pcts_p_2 = (0.02, 0.025, 0.025, 0.03, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095)
-    rebuy_pcts_n_3 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
-    rebuy_pcts_n_4 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
-    rebuy_pcts_n_5 = (-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3,-0.3)
-    rebuy_multi_0 = 1.0
-    rebuy_multi_1 = 1.0
-    rebuy_multi_2 = 1.0
+    rebuy_pcts_n_3 = (-0.30,-0.30,-0.30,-0.30,-0.30)
+    rebuy_pcts_n_4 = (-0.30,-0.30,-0.30,-0.30,-0.30)
+    rebuy_pcts_n_5 = (-0.30,-0.30,-0.30,-0.30,-0.30)
+    rebuy_multi_0 = 0.5
+    rebuy_multi_1 = 0.5
+    rebuy_multi_2 = 0.5
     rebuy_multi_2_alt = 0.35
-    rebuy_multi_3 = 1.0
-    rebuy_multi_4 = 1.0
-    rebuy_multi_5 = 1.0
+    rebuy_multi_3 = 0.5
+    rebuy_multi_4 = 0.5
+    rebuy_multi_5 = 0.5
 
     # Profit maximizer
     profit_max_enabled = True
@@ -158,7 +164,7 @@ class MyTrade_spot(IStrategy):
     short_normal_mode_name = "short_normal"
 
     is_futures_mode = True
-    futures_mode_leverage = 3
+    futures_mode_leverage = 5
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 480
@@ -9682,7 +9688,7 @@ class MyTrade_spot(IStrategy):
         # Assign tf to each pair so they can be downloaded and cached for strategy.
         informative_pairs = [(pair, self.info_timeframe_1h) for pair in pairs]
         informative_pairs.extend([(pair, self.info_timeframe_1d) for pair in pairs])
-        informative_pairs.extend([(pair, self.info_timeframe_30m) for pair in pairs])
+        informative_pairs.extend([(pair, self.info_timeframe_15m) for pair in pairs])
 
         if self.config['stake_currency'] in ['USDT','BUSD','USDC','DAI','TUSD','PAX','USD','EUR','GBP', 'TRY', 'BRL']:
             btc_info_pair = f"BTC/{self.config['stake_currency']}"
@@ -9692,7 +9698,7 @@ class MyTrade_spot(IStrategy):
         informative_pairs.append((btc_info_pair, self.timeframe))
         informative_pairs.append((btc_info_pair, self.info_timeframe_1d))
         informative_pairs.append((btc_info_pair, self.info_timeframe_1h))
-        informative_pairs.append((btc_info_pair, self.info_timeframe_30m))
+        informative_pairs.append((btc_info_pair, self.info_timeframe_15m))
         return informative_pairs
 
     def informative_1d_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -9811,7 +9817,7 @@ class MyTrade_spot(IStrategy):
         tik = time.perf_counter()
         assert self.dp, "DataProvider is required for multiple timeframes."
         # Get the informative pair
-        informative_15m = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe=self.info_timeframe_30m)
+        informative_15m = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe=self.info_timeframe_15m)
 
         # RSI
         informative_15m['rsi_14'] = ta.RSI(informative_15m, timeperiod=14)
@@ -10177,10 +10183,10 @@ class MyTrade_spot(IStrategy):
             drop_columns = [f"{s}_{self.info_timeframe_1h}" for s in ['date']]
             dataframe.drop(columns=dataframe.columns.intersection(drop_columns), inplace=True)
 
-        if self.info_timeframe_30m != 'none':
+        if self.info_timeframe_15m != 'none':
             informative_15m = self.informative_15m_indicators(dataframe, metadata)
-            dataframe = merge_informative_pair(dataframe, informative_15m, self.timeframe, self.info_timeframe_30m, ffill=True)
-            drop_columns = [f"{s}_{self.info_timeframe_30m}" for s in ['date']]
+            dataframe = merge_informative_pair(dataframe, informative_15m, self.timeframe, self.info_timeframe_15m, ffill=True)
+            drop_columns = [f"{s}_{self.info_timeframe_15m}" for s in ['date']]
             dataframe.drop(columns=dataframe.columns.intersection(drop_columns), inplace=True)
 
         '''
